@@ -170,6 +170,118 @@
               <span class="post-meta-item-text">Posted on</span>
               
 
+              <time title="Created: 2023-03-24 13:53:19 / Modified: 13:53:36" itemprop="dateCreated datePublished" datetime="2023-03-24T13:53:19+08:00">2023-03-24</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>上次简单写了一个引言，接下来我们就从编译开始。要说明下，本文不会深入讲解编译原理，那是一个非常大的课题，同时暂时不了解这些原理也不影响理解后面的内容。</p>
+<p>为什么很多老手总是建议新手少用ide，其实也是有一定原因的，因为ide掩盖了很多事情。</p>
+<p>就从ide上一个编译来说，这中间其实包含了几个步骤。</p>
+<p>我们知道编译的作用就是将我们的源代码生成一个可执行文件。其实这中间包含了四个步骤：预编译、编译、汇编和链接。我们一步一步的来看。</p>
+<h1 id="预编译"><a href="#预编译" class="headerlink" title="预编译"></a>预编译</h1><p>这是编译的第一步，这一步主要处理以#开头的预编译指令，比如#include，#define等，大概会做如下事情：</p>
+<ol>
+<li>将所有#include的头文件展开到当前文件；</li>
+<li>展开所有的宏定义，也就是代码中#define的那些宏都会用值替代；</li>
+<li>处理所有的#if …#else…#elif…#endif这些条件编译指令；</li>
+<li>删除所有的注释；</li>
+<li>添加行号和文件号标识，便于调试。</li>
+</ol>
+<p>gcc中预编译的指令是</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc -E</span><br></pre></td></tr></table></figure>
+
+<p>我们用个例子来看</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line"></span><br><span class="line">#define A  1</span><br><span class="line">#define B  2</span><br><span class="line"></span><br><span class="line">int main()</span><br><span class="line">&#123;</span><br><span class="line">    int a = A;</span><br><span class="line">    int b = B;</span><br><span class="line"></span><br><span class="line">    int c = a + b;  /* add a and b, store the result to c */</span><br><span class="line"></span><br><span class="line">    printf(&quot;c = %d\n&quot;, c);</span><br><span class="line"></span><br><span class="line">    return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行预编译指令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc -E test.c -o test.i</span><br></pre></td></tr></table></figure>
+
+<p>这样我们就将预编译的结果存在了test.i文件中，打开这个文件，发现内容非常多，其实看一下，就知道，前面都是头文件stdio.h的展开，因为stdio.h中又包含了其他头文件，这些头文件都会展开，所以test.i这个文件会比较大，我们提取一部分看下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line">extern FILE *stdin;</span><br><span class="line">extern FILE *stdout;</span><br><span class="line">extern FILE *stderr;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">extern int remove (const char *__filename) __attribute__ ((__nothrow__ , __leaf__));</span><br><span class="line"></span><br><span class="line">extern int rename (const char *__old, const char *__new) __attribute__ ((__nothrow__ , __leaf__));</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">extern int renameat (int __oldfd, const char *__old, int __newfd,</span><br><span class="line">       const char *__new) __attribute__ ((__nothrow__ , __leaf__));</span><br><span class="line"># 173 &quot;/usr/include/stdio.h&quot; 3 4</span><br><span class="line">extern FILE *tmpfile (void) ;</span><br><span class="line"># 187 &quot;/usr/include/stdio.h&quot; 3 4</span><br><span class="line">extern char *tmpnam (char *__s) __attribute__ ((__nothrow__ , __leaf__)) ;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">extern char *tmpnam_r (char *__s) __attribute__ ((__nothrow__ , __leaf__)) ;</span><br><span class="line"># 204 &quot;/usr/include/stdio.h&quot; 3 4</span><br><span class="line">extern char *tempnam (const char *__dir, const char *__pfx)</span><br><span class="line">     __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__malloc__)) ;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">extern int fclose (FILE *__stream);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">extern int fflush (FILE *__stream);</span><br><span class="line"># 227 &quot;/usr/include/stdio.h&quot; 3 4</span><br><span class="line">extern int fflush_unlocked (FILE *__stream);</span><br><span class="line"># 246 &quot;/usr/include/stdio.h&quot; 3 4</span><br><span class="line">extern FILE *fopen (const char *__restrict __filename,</span><br><span class="line">      const char *__restrict __modes) ;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">extern FILE *freopen (const char *__restrict __filename,</span><br><span class="line">        const char *__restrict __modes,</span><br><span class="line">        FILE *__restrict __stream) ;</span><br><span class="line"># 279 &quot;/usr/include/stdio.h&quot; 3 4</span><br><span class="line">extern FILE *fdopen (int __fd, const char *__modes) __attribute__ ((__nothrow__ , __leaf__)) ;</span><br><span class="line"># 292 &quot;/usr/include/stdio.h&quot; 3 4</span><br><span class="line">extern FILE *fmemopen (void *__s, size_t __len, const char *__modes)</span><br><span class="line">  __attribute__ ((__nothrow__ , __leaf__)) ;</span><br><span class="line">.</span><br><span class="line">.</span><br><span class="line">.</span><br><span class="line">extern int printf (const char *__restrict __format, ...);</span><br></pre></td></tr></table></figure>
+<p>再看我们的main函数变成什么了，拉到test.i文件的最后</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">int main()</span><br><span class="line">&#123;</span><br><span class="line">    int a = 1;</span><br><span class="line">    int b = 2;</span><br><span class="line"></span><br><span class="line">    int c = a + b;</span><br><span class="line"></span><br><span class="line">    printf(&quot;c = %d\n&quot;, c);</span><br><span class="line"></span><br><span class="line">    return 0;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>可以看到，定义的两个宏在代码中已经用宏的值替换了，注释也删除了。<br>以上我们就了解了预编译到底做了啥。</p>
+<p>到这里，我们就可以来解释一个问题，就是我们在定义一个头文件的时候，一般都要采取如下格式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">#ifndef XXXX_H</span><br><span class="line">#define XXXX_H</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">#endif</span><br></pre></td></tr></table></figure>
+
+<p>为什么要这么做呢，防止重复包含头文件后的重复展开，导致函数声明重复。这样操作后，即便同一个头文件包含了多次，也只会展开一次，不会出现问题。</p>
+<p>在嵌入式开发中，我们经常就会利用这种展开机制，嵌入式开发中经常出现没有文件系统的情况，比如一些mcu方案里，操作系统是一些轻量级的rtos，不存在文件系统，而我们测试的时候，经常会有一些输入数据和参考输出数据，没有文件系统，这些数据怎么读进去呢。这个时候，就需要把这些数据编进代码里，最简单的办法就是定义一个全局数据，然后数组初始化为这些测试数据。<br>但是如果测试数据比较多，那么这个源文件里看起来就是大量的数据，不是很友好。这个时候就可以把数据放在一个文件里，比如data.dat，然后在源文件中通过#include包含进来</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">int g_input_data[] = </span><br><span class="line">&#123;</span><br><span class="line">#include &quot;data.dat&quot;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>这样，更换输入也方便，只需要换个文件就可以了。</p>
+<h1 id="编译"><a href="#编译" class="headerlink" title="编译"></a>编译</h1><p>预编译相当于对源文件做了一个预处理，接下来编译的工作就是将源代码翻译成汇编代码。<br>gcc中编译的命令如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc -S</span><br></pre></td></tr></table></figure>
+
+<p>我们将刚刚得到的test.i编译</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc -S test.i -o test.s</span><br></pre></td></tr></table></figure>
+<p>输出了汇编文件test.s</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line">	.file	&quot;test.c&quot;</span><br><span class="line">	.text</span><br><span class="line">	.section	.rodata</span><br><span class="line">.LC0:</span><br><span class="line">	.string	&quot;c = %d\n&quot;</span><br><span class="line">	.text</span><br><span class="line">	.globl	main</span><br><span class="line">	.type	main, @function</span><br><span class="line">main:</span><br><span class="line">.LFB0:</span><br><span class="line">	.cfi_startproc</span><br><span class="line">	endbr64</span><br><span class="line">	pushq	%rbp</span><br><span class="line">	.cfi_def_cfa_offset 16</span><br><span class="line">	.cfi_offset 6, -16</span><br><span class="line">	movq	%rsp, %rbp</span><br><span class="line">	.cfi_def_cfa_register 6</span><br><span class="line">	subq	$16, %rsp</span><br><span class="line">	movl	$1, -12(%rbp)</span><br><span class="line">	movl	$2, -8(%rbp)</span><br><span class="line">	movl	-12(%rbp), %edx</span><br><span class="line">	movl	-8(%rbp), %eax</span><br><span class="line">	addl	%edx, %eax</span><br><span class="line">	movl	%eax, -4(%rbp)</span><br><span class="line">	movl	-4(%rbp), %eax</span><br><span class="line">	movl	%eax, %esi</span><br><span class="line">	leaq	.LC0(%rip), %rdi</span><br><span class="line">	movl	$0, %eax</span><br><span class="line">	call	printf@PLT</span><br><span class="line">	movl	$0, %eax</span><br><span class="line">	leave</span><br><span class="line">	.cfi_def_cfa 7, 8</span><br><span class="line">	ret</span><br><span class="line">	.cfi_endproc</span><br><span class="line">.LFE0:</span><br><span class="line">	.size	main, .-main</span><br><span class="line">	.ident	&quot;GCC: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0&quot;</span><br><span class="line">	.section	.note.GNU-stack,&quot;&quot;,@progbits</span><br><span class="line">	.section	.note.gnu.property,&quot;a&quot;</span><br><span class="line">	.align 8</span><br><span class="line">	.long	 1f - 0f</span><br><span class="line">	.long	 4f - 1f</span><br><span class="line">	.long	 5</span><br><span class="line">0:</span><br><span class="line">	.string	 &quot;GNU&quot;</span><br><span class="line">1:</span><br><span class="line">	.align 8</span><br><span class="line">	.long	 0xc0000002</span><br><span class="line">	.long	 3f - 2f</span><br><span class="line">2:</span><br><span class="line">	.long	 0x3</span><br><span class="line">3:</span><br><span class="line">	.align 8</span><br><span class="line">4:</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>gcc将预编译和编译两步合并了，其实这两步都是调用了cc1这个程序（位于 /usr/lib/gcc/x86_64-linux-gnu/9/cc1）。</p>
+<h1 id="汇编"><a href="#汇编" class="headerlink" title="汇编"></a>汇编</h1><p>汇编是将编译出来的汇编代码翻译成计算机能够执行的机器代码，基本上一条汇编指令就会对应一条机器指令。<br>gcc中汇编的指令如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc -c</span><br></pre></td></tr></table></figure>
+<p>gcc汇编的过程也是调用了汇编器as完成的。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc -c test.s -o test.o</span><br></pre></td></tr></table></figure>
+
+<p>生成的test.o就是机器代码文件，也叫目标文件。在很多源代码的工程中，编译后，我们往往能够看到，每一个源文件都会生成一个.o的目标文件。</p>
+<h1 id="链接"><a href="#链接" class="headerlink" title="链接"></a>链接</h1><p>目标文件生成了，但是目标文件并不能直接运行，还需要通过链接生成可执行文件。链接是很重要的一步，也特别复杂，这部分后面还会专门展开写，静态链接和动态链接。<br>gcc中链接由连接器collect2完成。<br>为什么刚才的目标文件不能直接运行呢？<br>我们先把刚才的test.c完整的编译成一个可执行程序a.out（gcc中不指定输出程序名的话，默认为a.out）。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc test.c</span><br></pre></td></tr></table></figure>
+<p>这样我们就得到了可执行程序，这个a.out是可以直接运行的。现在再来分别反汇编一下a.out和刚才的test.o，看看两者的差异，反汇编可以用objdump工具</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">objdump -s a.out &gt; a.s</span><br><span class="line">objdump -s test.o &gt; test.s</span><br></pre></td></tr></table></figure>
+<p>你会看到，两个文件差异很多，a.out里明显多出了很多内容，这些内容就是链接时生成的，而且，没有这些内容，就没法运行。</p>
+<p>到这里，我们终于得到了可执行文件，终于可以运行了。可见，ide上一个简单的编译操作，它的背后其实涵盖了很多内容。</p>
+<p>接下来，就是运行了，一个简单的./a.out，这背后又会发生什么呢？这就得首先从可执行文件入手了，这就是下一次的主题。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2023/03/24/%E7%A8%8B%E5%BA%8F%E6%98%AF%E5%A6%82%E4%BD%95%E8%B7%91%E8%B5%B7%E6%9D%A5%E7%9A%84-%E5%BC%95%E8%A8%80/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2023/03/24/%E7%A8%8B%E5%BA%8F%E6%98%AF%E5%A6%82%E4%BD%95%E8%B7%91%E8%B5%B7%E6%9D%A5%E7%9A%84-%E5%BC%95%E8%A8%80/" class="post-title-link" itemprop="url">程序是如何跑起来的-编译</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
               <time title="Created: 2023-03-24 13:49:17 / Modified: 13:49:46" itemprop="dateCreated datePublished" datetime="2023-03-24T13:49:17+08:00">2023-03-24</time>
             </span>
 
@@ -354,7 +466,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-count">3</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
