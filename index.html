@@ -152,6 +152,150 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2023/07/21/%E7%A8%8B%E5%BA%8F%E6%98%AF%E5%A6%82%E4%BD%95%E8%B7%91%E8%B5%B7%E6%9D%A5%E7%9A%84-%E9%9D%99%E6%80%81%E9%93%BE%E6%8E%A5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="WarmDad">
+      <meta itemprop="description" content="WarmDad的学习与生活记录空间">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="WarmDad's Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2023/07/21/%E7%A8%8B%E5%BA%8F%E6%98%AF%E5%A6%82%E4%BD%95%E8%B7%91%E8%B5%B7%E6%9D%A5%E7%9A%84-%E9%9D%99%E6%80%81%E9%93%BE%E6%8E%A5/" class="post-title-link" itemprop="url">程序是如何跑起来的-静态链接</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2023-07-21 14:42:46 / 修改时间：14:43:13" itemprop="dateCreated datePublished" datetime="2023-07-21T14:42:46+08:00">2023-07-21</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>编译的最后一步就是链接，链接分为静态链接和动态链接，我们先讲静态链接。<br>所谓链接，就是把各个目标文件组装合并成一个可执行文件。<br>链接主要分为两步，第一步进行目标文件的合并，并进行空间地址分配；第二步就是符号解析和重定位。我们就主要分析下这个过程。<br>从前面我们知道，一个目标文件中由多个段组成，典型的有.text段，.data段，.bss段。那么链接过程如何把它们粘在一起呢？</p>
+<h1 id="合并"><a href="#合并" class="headerlink" title="合并"></a>合并</h1><h2 id="顺序叠加"><a href="#顺序叠加" class="headerlink" title="顺序叠加"></a>顺序叠加</h2><p>最容易想到的方法就是直接叠加的方法，就多个目标文件直接拼接，如下图所示：</p>
+<p><img src="https://ycy2015.oss-cn-nanjing.aliyuncs.com/img/%E6%97%A0%E6%A0%87%E9%A2%98-2023-04-18-2009.png"></p>
+<p>但是这样有一个很大的缺点就是最后的文件被分割成了很多个段，显得非常零散。而且，也非常浪费空间，因为在装载的时候，每一个段都会对应一个空间地址和对齐要求，一般情况下，会要求4k对齐（页对齐），这样，一个段不管多大，都会占用整数页，会产生大量内存碎片，浪费空间。</p>
+<h2 id="相似段合并"><a href="#相似段合并" class="headerlink" title="相似段合并"></a>相似段合并</h2><p>另一种方法就是将各个目标文件的相似段合并成一个段，如下图所示<br><img src="https://ycy2015.oss-cn-nanjing.aliyuncs.com/img/%E6%97%A0%E6%A0%87%E9%A2%98-2023-04-24-2009.png"></p>
+<p>目前的连接器都是采用的这种合并方式。链接器首先扫描所有的输入目标文件，获取它们各个段的信息，并收集所有的符号统一放到一个全局符号表，然后进行符号解析和重定位等操作。</p>
+<p>来看个例子</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* a.c */</span></span><br><span class="line"><span class="keyword">extern</span> <span class="type">int</span> <span class="title function_">add</span><span class="params">(<span class="type">int</span> a, <span class="type">int</span> b)</span>;</span><br><span class="line"><span class="keyword">extern</span> <span class="type">int</span> g_b;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> a = <span class="number">2</span>; </span><br><span class="line">    <span class="type">int</span> c = add(a, g_b);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* b.c */</span></span><br><span class="line"><span class="type">int</span> g_b = <span class="number">3</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">add</span><span class="params">(<span class="type">int</span> a, <span class="type">int</span> b)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> a + b;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>编译后，将a.o和b.o链接起来<br>aarch64-none-linux-gnu-ld a.o b.o -e main -o ab<br>然后我们看看链接前后的情况</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line">aarch64-none-linux-gnu-objdump -h a.o</span><br><span class="line"></span><br><span class="line">a.o:     file format elf64-littleaarch64</span><br><span class="line"></span><br><span class="line">Sections:</span><br><span class="line">Idx Name          Size      VMA               LMA               File off  Algn</span><br><span class="line">  0 .text         00000038  0000000000000000  0000000000000000  00000040  2**2</span><br><span class="line">                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE</span><br><span class="line">  1 .data         00000000  0000000000000000  0000000000000000  00000078  2**0</span><br><span class="line">                  CONTENTS, ALLOC, LOAD, DATA</span><br><span class="line">  2 .bss          00000000  0000000000000000  0000000000000000  00000078  2**0</span><br><span class="line">                  ALLOC</span><br><span class="line">  3 .comment      0000005e  0000000000000000  0000000000000000  00000078  2**0</span><br><span class="line">                  CONTENTS, READONLY</span><br><span class="line">  4 .note.GNU-stack 00000000  0000000000000000  0000000000000000  000000d6  2**0</span><br><span class="line">                  CONTENTS, READONLY</span><br><span class="line">  5 .eh_frame     00000038  0000000000000000  0000000000000000  000000d8  2**3</span><br><span class="line">                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">aarch64-none-linux-gnu-objdump -h b.o</span><br><span class="line"></span><br><span class="line">b.o:     file format elf64-littleaarch64</span><br><span class="line"></span><br><span class="line">Sections:</span><br><span class="line">Idx Name          Size      VMA               LMA               File off  Algn</span><br><span class="line">  0 .text         00000020  0000000000000000  0000000000000000  00000040  2**2</span><br><span class="line">                  CONTENTS, ALLOC, LOAD, READONLY, CODE</span><br><span class="line">  1 .data         00000004  0000000000000000  0000000000000000  00000060  2**2</span><br><span class="line">                  CONTENTS, ALLOC, LOAD, DATA</span><br><span class="line">  2 .bss          00000000  0000000000000000  0000000000000000  00000064  2**0</span><br><span class="line">                  ALLOC</span><br><span class="line">  3 .comment      0000005e  0000000000000000  0000000000000000  00000064  2**0</span><br><span class="line">                  CONTENTS, READONLY</span><br><span class="line">  4 .note.GNU-stack 00000000  0000000000000000  0000000000000000  000000c2  2**0</span><br><span class="line">                  CONTENTS, READONLY</span><br><span class="line">  5 .eh_frame     00000030  0000000000000000  0000000000000000  000000c8  2**3</span><br><span class="line">                  CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">aarch64-none-linux-gnu-objdump -h ab</span><br><span class="line"></span><br><span class="line">ab:     file format elf64-littleaarch64</span><br><span class="line"></span><br><span class="line">Sections:</span><br><span class="line">Idx Name          Size      VMA               LMA               File off  Algn</span><br><span class="line">  0 .text         00000058  0000000000400120  0000000000400120  00000120  2**2</span><br><span class="line">                  CONTENTS, ALLOC, LOAD, READONLY, CODE</span><br><span class="line">  1 .eh_frame     00000050  0000000000400178  0000000000400178  00000178  2**3</span><br><span class="line">                  CONTENTS, ALLOC, LOAD, READONLY, DATA</span><br><span class="line">  2 .data         00000004  0000000000410fe8  0000000000410fe8  00000fe8  2**2</span><br><span class="line">                  CONTENTS, ALLOC, LOAD, DATA</span><br><span class="line">  3 .comment      0000005d  0000000000000000  0000000000000000  00000fec  2**0</span><br><span class="line">                  CONTENTS, READONLY</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h2 id="空间分配"><a href="#空间分配" class="headerlink" title="空间分配"></a>空间分配</h2><p>链接的一个重要工作就是给可执行文件分配地址空间，程序运行在内存中，所以就需要分配地址，这里一般都是指虚拟地址。<br>上面查看elf文件信息时，可以看到有个VMA和LMA，这里的VMA就是分配的虚拟地址，LMA是加载地址，一般情况下这两个地址是一样，但是在一些嵌入式系统中，程序要放在ROM中，LMA和VMA是不一样的，程序会先加载到ROM中，然后从ROM搬到内存执行。<br>这里我们关注VMA，可以看到链接之前VMA都是0，此时还没有分配地址，链接之后各个段都分配了响应的虚拟地址，.text段被分配到了地址0x400120，大小为0x58字节。<br>为什么链接器给可执行文件分配的地址会这么大呢，为什么不是从0开始呢？这里涉及一些虚拟地址空间分配的规则，在linux下，64位系统，elf可执行文件默认从地址0x400000开始分配。这块后面还会细讲。</p>
+<p>完成地址分配后，各个符号的地址也就确定了，各个段内的符号相对各个段的偏移是固定的，那么经过缝合后，段的首地址确定了，那么符号的地址也就确定了。</p>
+<h1 id="重定位"><a href="#重定位" class="headerlink" title="重定位"></a>重定位</h1><h2 id="重定位-1"><a href="#重定位-1" class="headerlink" title="重定位"></a>重定位</h2><p>完成空间分配后，就进入到静态链接的重要一环，符号解析和重定位。<br>为什么需要重定位呢？我们首先来看下a.o的反汇编</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">aarch64-none-linux-gnu-objdump -d a.o</span><br><span class="line"></span><br><span class="line">a.o:     file format elf64-littleaarch64</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Disassembly of section .text:</span><br><span class="line"></span><br><span class="line">0000000000000000 &lt;main&gt;:</span><br><span class="line">   0:	a9be7bfd 	stp	x29, x30, [sp, #-32]!</span><br><span class="line">   4:	910003fd 	mov	x29, sp</span><br><span class="line">   8:	52800040 	mov	w0, #0x2                   	// #2</span><br><span class="line">   c:	b9001fe0 	str	w0, [sp, #28]</span><br><span class="line">  10:	90000000 	adrp	x0, 0 &lt;g_b&gt;</span><br><span class="line">  14:	91000000 	add	x0, x0, #0x0</span><br><span class="line">  18:	b9400000 	ldr	w0, [x0]</span><br><span class="line">  1c:	2a0003e1 	mov	w1, w0</span><br><span class="line">  20:	b9401fe0 	ldr	w0, [sp, #28]</span><br><span class="line">  24:	94000000 	bl	0 &lt;add&gt;</span><br><span class="line">  28:	b9001be0 	str	w0, [sp, #24]</span><br><span class="line">  2c:	52800000 	mov	w0, #0x0                   	// #0</span><br><span class="line">  30:	a8c27bfd 	ldp	x29, x30, [sp], #32</span><br><span class="line">  34:	d65f03c0 	ret</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>再看看ab的反汇编</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">aarch64-none-linux-gnu-objdump -d ab</span><br><span class="line"></span><br><span class="line">ab:     file format elf64-littleaarch64</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Disassembly of section .text:</span><br><span class="line"></span><br><span class="line">0000000000400120 &lt;main&gt;:</span><br><span class="line">  400120:	a9be7bfd 	stp	x29, x30, [sp, #-32]!</span><br><span class="line">  400124:	910003fd 	mov	x29, sp</span><br><span class="line">  400128:	52800040 	mov	w0, #0x2                   	// #2</span><br><span class="line">  40012c:	b9001fe0 	str	w0, [sp, #28]</span><br><span class="line">  400130:	90000080 	adrp	x0, 410000 &lt;add+0xfea8&gt;</span><br><span class="line">  400134:	913fa000 	add	x0, x0, #0xfe8</span><br><span class="line">  400138:	b9400000 	ldr	w0, [x0]</span><br><span class="line">  40013c:	2a0003e1 	mov	w1, w0</span><br><span class="line">  400140:	b9401fe0 	ldr	w0, [sp, #28]</span><br><span class="line">  400144:	94000005 	bl	400158 &lt;add&gt;</span><br><span class="line">  400148:	b9001be0 	str	w0, [sp, #24]</span><br><span class="line">  40014c:	52800000 	mov	w0, #0x0                   	// #0</span><br><span class="line">  400150:	a8c27bfd 	ldp	x29, x30, [sp], #32</span><br><span class="line">  400154:	d65f03c0 	ret</span><br><span class="line"></span><br><span class="line">0000000000400158 &lt;add&gt;:</span><br><span class="line">  400158:	d10043ff 	sub	sp, sp, #0x10</span><br><span class="line">  40015c:	b9000fe0 	str	w0, [sp, #12]</span><br><span class="line">  400160:	b9000be1 	str	w1, [sp, #8]</span><br><span class="line">  400164:	b9400fe1 	ldr	w1, [sp, #12]</span><br><span class="line">  400168:	b9400be0 	ldr	w0, [sp, #8]</span><br><span class="line">  40016c:	0b000020 	add	w0, w1, w0</span><br><span class="line">  400170:	910043ff 	add	sp, sp, #0x10</span><br><span class="line">  400174:	d65f03c0 	ret</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>比较两个main的汇编，发现有几处不同，a.o中的</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">10:	90000000 	adrp	x0, 0 &lt;g_b&gt;</span><br><span class="line">14:	91000000 	add	x0, x0, #0x0</span><br></pre></td></tr></table></figure>
+<p>和ab中的</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">400130:	90000080 	adrp	x0, 410000 &lt;add+0xfea8&gt;</span><br><span class="line">400134:	913fa000 	add	x0, x0, #0xfe8</span><br></pre></td></tr></table></figure>
+<p>还有就是a.o中的</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">24:	94000000 	bl	0 &lt;add&gt;</span><br></pre></td></tr></table></figure>
+<p>和ab中的</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">400144:	94000005 	bl	400158 &lt;add&gt;</span><br></pre></td></tr></table></figure>
+
+<p>adrp这条指令的作用获得变量当前页的基址，然后利用一条add指令加上变量在页内的偏移获得变量的地址。a.c在编译的时候显然是不知道外部变量g_b的地址的，所以，它就默认讲其地址设置为0。同样，add的地址也不知道，所以bl指令后面的地址也默认为0。</p>
+<p>编译器不知道外部变量的地址，所以就先用0替代，然后链接器负责将其修正到正确的地址。</p>
+<p>那么链接器是如何做的呢，它怎么知道哪些指令需要修正呢？其实每个elf文件都有一个重定位表，用以专门保存跟重定位相关的信息。elf文件中，每个重定位表基本都对应了一个重定位段，一个elf文件中可能存在多个重定位段。比如代码段“.text”如果有要被重定位的地方，就会有一个叫”.rel.text“的重定位段，相应的如果”.data”段中有需要重定位的地方，就会有一个“.rel.data”的重定位段。</p>
+<p>我们来看下a.o的重定位表是怎样的</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">aarch64-none-linux-gnu-objdump -r a.o</span><br><span class="line"></span><br><span class="line">a.o:     file format elf64-littleaarch64</span><br><span class="line"></span><br><span class="line">RELOCATION RECORDS FOR [.text]:</span><br><span class="line">OFFSET           TYPE              VALUE </span><br><span class="line">0000000000000010 R_AARCH64_ADR_PREL_PG_HI21  g_b</span><br><span class="line">0000000000000014 R_AARCH64_ADD_ABS_LO12_NC  g_b</span><br><span class="line">0000000000000024 R_AARCH64_CALL26  add</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">RELOCATION RECORDS FOR [.eh_frame]:</span><br><span class="line">OFFSET           TYPE              VALUE </span><br><span class="line">000000000000001c R_AARCH64_PREL32  .text</span><br></pre></td></tr></table></figure>
+
+<p>这里展示了a.o里所有需要重定位的地方。每个要被重定位的地方叫一个重定位入口，每个入口前面的offset指的就是需要重定位的地方在段中的位置，RELOCATION RECORDS FOR [.text]指的就是代码段的重定位表。<br>重定位表在elf中也对应了一个数据结构：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">elf64_rel</span> &#123;</span></span><br><span class="line"></span><br><span class="line">  Elf64_Addr r_offset;  <span class="comment">/* Location at which to apply the action */</span></span><br><span class="line"></span><br><span class="line">  Elf64_Xword r_info; <span class="comment">/* index and type of relocation */</span></span><br><span class="line"></span><br><span class="line">&#125; Elf64_Rel;</span><br></pre></td></tr></table></figure>
+<p>r_offset 就是重定位入口的偏移，r_info是指重定位的类型，下面指令修正部分会涉及。</p>
+<p>重定位的过程其实也是一个符号解析的过程，每个elf文件都有一个自己的符号表，查看a.o的符号表如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">aarch64-none-linux-gnu-readelf -s a.o</span><br><span class="line"></span><br><span class="line">Symbol table &#x27;.symtab&#x27; contains 13 entries:</span><br><span class="line">   Num:    Value          Size Type    Bind   Vis      Ndx Name</span><br><span class="line">     0: 0000000000000000     0 NOTYPE  LOCAL  DEFAULT  UND </span><br><span class="line">     1: 0000000000000000     0 FILE    LOCAL  DEFAULT  ABS a.c</span><br><span class="line">     2: 0000000000000000     0 SECTION LOCAL  DEFAULT    1 </span><br><span class="line">     3: 0000000000000000     0 SECTION LOCAL  DEFAULT    3 </span><br><span class="line">     4: 0000000000000000     0 SECTION LOCAL  DEFAULT    4 </span><br><span class="line">     5: 0000000000000000     0 NOTYPE  LOCAL  DEFAULT    1 $x</span><br><span class="line">     6: 0000000000000000     0 SECTION LOCAL  DEFAULT    6 </span><br><span class="line">     7: 0000000000000014     0 NOTYPE  LOCAL  DEFAULT    7 $d</span><br><span class="line">     8: 0000000000000000     0 SECTION LOCAL  DEFAULT    7 </span><br><span class="line">     9: 0000000000000000     0 SECTION LOCAL  DEFAULT    5 </span><br><span class="line">    10: 0000000000000000    56 FUNC    GLOBAL DEFAULT    1 main</span><br><span class="line">    11: 0000000000000000     0 NOTYPE  GLOBAL DEFAULT  UND g_b</span><br><span class="line">    12: 0000000000000000     0 NOTYPE  GLOBAL DEFAULT  UND add</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>可以看到g_b和add是属于UND符号，也就是undefined，说明当前目标文件中没有它们的重定位项，链接器在链接过程中，会扫描所有的输入目标文件，如果这些未定义的符号没有在全局符号表中找到，那么就会报符号未定义错误。这也是我们开发过程中编译最常见的一种错误，一般都是没有链接某个库导致。</p>
+<h2 id="指令修正"><a href="#指令修正" class="headerlink" title="指令修正"></a>指令修正</h2><p>找到了需要重定位的指令之后，就需要将默认的符号地址修正成正确的目标地址。对于指令的修正方式不同的处理器会有不同的方式。比如arm64 体系结构的一些重定位类型：</p>
+<ol>
+<li>R_AARCH64_ABS64：绝对64位地址重定位类型。</li>
+<li>R_AARCH64_ABS32：绝对32位地址重定位类型。</li>
+<li>R_AARCH64_ABS16：绝对16位地址重定位类型。</li>
+<li>R_AARCH64_PREL64：相对64位地址重定位类型。</li>
+<li>R_AARCH64_PREL32：相对32位地址重定位类型。</li>
+<li>R_AARCH64_PREL16：相对16位地址重定位类型。</li>
+<li>R_AARCH64_ADR_PREL_PG_HI21：将相对地址的高21位转换为页对齐的高位。</li>
+<li>R_AARCH64_ADR_PREL_PG_HI21_NC：非连续版本的R_AARCH64_ADR_PREL_PG_HI21。</li>
+<li>R_AARCH64_ADD_ABS_LO12_NC：将相对地址的低12位转换为绝对地址的低12位（非连续版本）。</li>
+<li>R_AARCH64_LDST8_ABS_LO12_NC：将相对地址的低12位转换为8位绝对地址的低12位（非连续版本）。</li>
+<li>R_AARCH64_LDST16_ABS_LO12_NC：将相对地址的低12位转换为16位绝对地址的低12位（非连续版本）。</li>
+<li>R_AARCH64_LDST32_ABS_LO12_NC：将相对地址的低12位转换为32位绝对地址的低12位（非连续版本）。</li>
+<li>R_AARCH64_LDST64_ABS_LO12_NC：将相对地址的低12位转换为64位绝对地址的低12位（非连续版本）。</li>
+<li>R_AARCH64_CALL26：将相对于当前指令位置的26位相对地址转换为绝对地址</li>
+</ol>
+<p>基本操作如下：</p>
+<table>
+<thead>
+<tr>
+<th>宏定义</th>
+<th>操作</th>
+<th>取值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>R_AARCH64_ADR_PREL_PG_HI21</td>
+<td>Page(S+A)-Page(P)</td>
+<td>X[31:12]</td>
+</tr>
+<tr>
+<td>R_AARCH64_ADD_ABS_LO12_NC</td>
+<td>S+A</td>
+<td>X[11:0]</td>
+</tr>
+<tr>
+<td>R_AARCH64_CALL26</td>
+<td>S+A-P</td>
+<td>X[27:2]</td>
+</tr>
+</tbody></table>
+<p>其中，S表示要重定位的符号的运行时地址，A是重新安置的加数，P是重定位站点的地址(派生自r_offset)。<code>Page(expr)</code>是表达式expr的页面地址。</p>
+<p>根据这个计算出来，第一条重定位的指令修正后地址就是0x410000。bl指令对应的R_AARCH64_CALL26，计算出来后，偏移是5。（（目标地址 - 指令地址）/ 4 = 偏移）。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://example.com/2023/04/13/%E4%B8%AD%E5%9B%BD%E8%BF%91%E4%BB%A3%E5%8F%B2%E7%9A%84%E8%87%AA%E5%BC%BA%E8%BF%90%E5%8A%A8/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -731,7 +875,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-count">6</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
